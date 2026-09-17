@@ -32,3 +32,29 @@ export async function createClient() {
     },
   );
 }
+
+/**
+ * Server-only admin client with service_role permissions.
+ * Used exclusively for trusted operations such as scoring assessments
+ * and populating student_competencies. Never expose or invoke from client components.
+ */
+export function createAdminClient() {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not defined in environment");
+  }
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceKey,
+    {
+      cookies: {
+        getAll() {
+          return [];
+        },
+        setAll() {},
+      },
+    },
+  );
+}
+

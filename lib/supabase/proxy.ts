@@ -7,14 +7,10 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  // If the env vars are not set, skip proxy check. You can remove this
-  // once you setup the project.
   if (!hasEnvVars) {
     return supabaseResponse;
   }
 
-  // With Fluid compute, don't put this client in a global environment
-  // variable. Always create a new one on each request.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
@@ -38,39 +34,113 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  // Refresh auth session
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  const pathname = request.nextUrl.pathname;
 
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  const isProtectedRoute =
+    pathname.startsWith("/student") ||
+    pathname.startsWith("/faculty") ||
+    pathname.startsWith("/institution") ||
+    pathname.startsWith("/industry") ||
+    pathname.startsWith("/super-admin") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/protected");
+
+  function getRoleDashboardPath(role: string): string {
+    if (role === "super_admin") {
+      return "/super-admin/dashboard";
+    }
+    return `/${role}/dashboard`;
+  }
+
+  // Redirect unauthenticated users from protected dashboard routes to login
+  if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
+    url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
 
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
+  // Authoritative role routing and cross-role protection for authenticated users
+  if (user && isProtectedRoute) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || !profile.role) {
+      if (pathname !== "/profile") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/profile";
+        return NextResponse.redirect(url);
+      }
+      return supabaseResponse;
+    }
+
+    const userRole = profile.role;
+
+    if (pathname === "/dashboard") {
+      const url = request.nextUrl.clone();
+      url.pathname = getRoleDashboardPath(userRole);
+      return NextResponse.redirect(url);
+    }
+
+    if (pathname.startsWith("/student") && userRole !== "student") {
+      const url = request.nextUrl.clone();
+      url.pathname = getRoleDashboardPath(userRole);
+      return NextResponse.redirect(url);
+    }
+
+    if (pathname.startsWith("/faculty") && userRole !== "faculty") {
+      const url = request.nextUrl.clone();
+      url.pathname = getRoleDashboardPath(userRole);
+      return NextResponse.redirect(url);
+    }
+
+    if (pathname.startsWith("/institution") && userRole !== "institution") {
+      const url = request.nextUrl.clone();
+      url.pathname = getRoleDashboardPath(userRole);
+      return NextResponse.redirect(url);
+    }
+
+    if (pathname.startsWith("/industry") && userRole !== "industry") {
+      const url = request.nextUrl.clone();
+      url.pathname = getRoleDashboardPath(userRole);
+      return NextResponse.redirect(url);
+    }
+
+    if (pathname.startsWith("/super-admin") && userRole !== "super_admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = getRoleDashboardPath(userRole);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Redirect logged-in users away from auth pages to their dashboard
+  if (user && (pathname === "/auth/login" || pathname === "/auth/sign-up")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || !profile.role) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/profile";
+      return NextResponse.redirect(url);
+    }
+
+    const userRole = profile.role;
+    const url = request.nextUrl.clone();
+    url.pathname = getRoleDashboardPath(userRole);
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }

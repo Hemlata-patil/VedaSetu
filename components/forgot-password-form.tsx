@@ -13,7 +13,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
+import { AdminAccessModal } from "@/components/auth/admin-access-modal";
+import { useAdminTrigger } from "@/components/auth/use-admin-trigger";
 
 export function ForgotPasswordForm({
   className,
@@ -23,6 +26,7 @@ export function ForgotPasswordForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { isAdminModalOpen, closeAdminModal, handleLogoClick } = useAdminTrigger();
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,8 +49,31 @@ export function ForgotPasswordForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      {success ? (
+    <>
+      <AdminAccessModal
+        isOpen={isAdminModalOpen}
+        onClose={closeAdminModal}
+      />
+      <div className={cn("flex flex-col gap-6", className)} {...props}>
+        <div className="flex justify-center mb-1">
+          <button
+            type="button"
+            onClick={handleLogoClick}
+            className="cursor-pointer transition-transform hover:scale-105 select-none focus:outline-none"
+            title="VEDA SETU"
+            aria-label="Veda Setu"
+          >
+            <Image
+              src="/images/veda-setu-logo.png"
+              alt="Veda Setu"
+              width={200}
+              height={70}
+              className="h-12 w-auto object-contain mx-auto"
+              priority
+            />
+          </button>
+        </div>
+        {success ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Check Your Email</CardTitle>
@@ -61,11 +88,10 @@ export function ForgotPasswordForm({
         </Card>
       ) : (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-heading">Reset Your Password</CardTitle>
             <CardDescription>
-              Type in your email and we&apos;ll send you a link to reset your
-              password
+              Enter your email to receive password reset instructions for VEDA SETU
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -101,5 +127,6 @@ export function ForgotPasswordForm({
         </Card>
       )}
     </div>
+    </>
   );
 }
