@@ -64,6 +64,7 @@ async function StudentApplicationsContent() {
       )
     `)
     .eq("student_id", user.id)
+    .neq("status", "withdrawn")
     .order("applied_at", { ascending: false });
 
   // 2. Fetch student's assessed competencies to calculate real-time Skill Match

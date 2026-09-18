@@ -18,11 +18,10 @@ async function OpportunitiesContent() {
       opportunity_type,
       status,
       location,
-      stipend,
       application_deadline,
       created_at,
-      organizations:organization_id(name),
-      creator:profiles!created_by(full_name, email)
+      organizations (name),
+      profiles (full_name, email)
     `)
     .order("created_at", { ascending: false });
 
@@ -51,12 +50,12 @@ async function OpportunitiesContent() {
     opportunity_type: opp.opportunity_type,
     status: opp.status,
     location: opp.location,
-    stipend: opp.stipend,
+    stipend: null,
     application_deadline: opp.application_deadline,
     created_at: opp.created_at,
-    organizationName: opp.organizations?.name || null,
-    creatorName: opp.creator?.full_name || null,
-    creatorEmail: opp.creator?.email || null,
+    organizationName: opp.organizations?.name || opp.organizations?.[0]?.name || null,
+    creatorName: opp.profiles?.full_name || opp.profiles?.[0]?.full_name || null,
+    creatorEmail: opp.profiles?.email || opp.profiles?.[0]?.email || null,
   }));
 
   return (
