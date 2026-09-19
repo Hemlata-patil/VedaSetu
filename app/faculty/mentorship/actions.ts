@@ -201,6 +201,23 @@ export async function acceptMentorshipRequest(param: string | { mentorshipId: st
     throw new Error(`Failed to accept mentorship request: ${updateErr.message}`);
   }
 
+  // 5. Create Mentor Messaging structures
+  // Insert into mentorship_pairs
+  await supabase
+    .from("mentorship_pairs")
+    .upsert(
+      { student_id: mentorship.student_id, mentor_id: user.id },
+      { onConflict: "student_id, mentor_id", ignoreDuplicates: true }
+    );
+    
+  // Insert into mentor_conversations
+  await supabase
+    .from("mentor_conversations")
+    .upsert(
+      { student_id: mentorship.student_id, mentor_id: user.id },
+      { onConflict: "student_id, mentor_id", ignoreDuplicates: true }
+    );
+
   revalidatePath("/faculty/dashboard");
   revalidatePath("/faculty/students");
   revalidatePath(`/faculty/students/${mentorship.student_id}`);

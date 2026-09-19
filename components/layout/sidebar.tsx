@@ -83,6 +83,7 @@ function getNavSectionsForRole(role: "student" | "faculty" | "institution" | "in
             { title: "Faculty Dashboard", href: dashboardPath, icon: LayoutDashboard },
             { title: "My Students", href: "/faculty/students", icon: Users },
             { title: "Mentorship", href: "/faculty/mentorship", icon: GraduationCap },
+            { title: "Messages", href: "/faculty/messages", icon: Scroll },
             { title: "FDP & Research", href: "/faculty/collaboration", icon: Microscope },
           ],
         },
@@ -145,6 +146,8 @@ function getNavSectionsForRole(role: "student" | "faculty" | "institution" | "in
             { title: "Internship & Placement", href: "/student/internship-placement", icon: Award },
             { title: "My Portfolio", href: "/student/portfolio", icon: Scroll },
             { title: "My Mentorship", href: "/student/mentorship", icon: GraduationCap },
+            { title: "Messages", href: "/student/messages", icon: FileCheck2 },
+            { title: "Recommendations", href: "/student/recommendations", icon: BarChart3 },
           ],
         },
         {
