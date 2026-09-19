@@ -147,7 +147,6 @@ function getNavSectionsForRole(role: "student" | "faculty" | "institution" | "in
             { title: "My Portfolio", href: "/student/portfolio", icon: Scroll },
             { title: "My Mentorship", href: "/student/mentorship", icon: GraduationCap },
             { title: "Messages", href: "/student/messages", icon: FileCheck2 },
-            { title: "Recommendations", href: "/student/recommendations", icon: BarChart3 },
           ],
         },
         {

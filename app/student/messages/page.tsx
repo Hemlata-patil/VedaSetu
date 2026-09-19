@@ -1,10 +1,14 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { ChatClient } from "@/components/messages/chat-client";
+import { RecommendationList } from "@/components/messages/recommendation-list";
+import { MessagesTabs } from "./messages-tabs";
 
 export default async function StudentMessagesPage() {
+  await connection();
   const { user, profile } = await requireRole("student");
   const supabase = await createClient();
 
@@ -50,6 +54,31 @@ export default async function StudentMessagesPage() {
     .eq("mentor_id", activeMentorship.faculty_id)
     .maybeSingle();
 
+  // 3. Fetch recommendations
+  const { data: recommendations } = await supabase
+    .from("mentor_recommendations")
+    .select("*, mentor:profiles!mentor_id(full_name)")
+    .eq("student_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const chatContent = conversation ? (
+    <Suspense fallback={<div className="flex h-full items-center justify-center">Loading chat...</div>}>
+      <ChatClient 
+        conversationId={conversation.id} 
+        currentUser={user} 
+        otherUser={activeMentorship.mentor} 
+      />
+    </Suspense>
+  ) : (
+    <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-ayush-border/80 bg-ayush-sand/20">
+      <p className="text-ayush-muted">Conversation initializing...</p>
+    </div>
+  );
+
+  const recommendationsContent = (
+    <RecommendationList initialRecommendations={recommendations || []} />
+  );
+
   return (
     <DashboardShell
       userRole="student"
@@ -57,23 +86,14 @@ export default async function StudentMessagesPage() {
       userEmail={profile.email}
       breadcrumbs={[
         { label: "Student Portal", href: "/student/dashboard" },
-        { label: "Messages" },
+        { label: "Messages & Recommendations" },
       ]}
     >
       <div className="h-[calc(100vh-12rem)] min-h-[500px]">
-        {conversation ? (
-          <Suspense fallback={<div>Loading chat...</div>}>
-            <ChatClient 
-              conversationId={conversation.id} 
-              currentUser={user} 
-              otherUser={activeMentorship.mentor} 
-            />
-          </Suspense>
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-ayush-muted">Conversation initializing...</p>
-          </div>
-        )}
+        <MessagesTabs 
+          chatContent={chatContent} 
+          recommendationsContent={recommendationsContent} 
+        />
       </div>
     </DashboardShell>
   );
