@@ -29,6 +29,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ApplyOpportunityCard } from "./apply-opportunity-card";
+import { AiOpportunityDetailCard } from "./ai-opportunity-detail-card";
 
 export const metadata = {
   title: "Opportunity Details — VEDA SETU",
@@ -206,6 +207,13 @@ async function OpportunityDetailContent(props: OpportunityDetailPageProps) {
               </div>
             </div>
           </Card>
+
+          {/* AI Opportunity Analysis Card */}
+          <AiOpportunityDetailCard
+            opportunityId={opportunity.id}
+            hasAssessedCompetencies={Boolean(studentComps && studentComps.length > 0)}
+            studentDepartment={profile?.department}
+          />
 
           {/* Required Competencies Breakdown (Part 5) */}
           <Card className="p-6 space-y-4">
