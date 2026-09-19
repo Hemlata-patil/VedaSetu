@@ -149,7 +149,6 @@ function getNavSectionsForRole(role: "student" | "faculty" | "institution" | "in
             { title: "My Mentorship", href: "/student/mentorship", icon: GraduationCap },
             { title: "Clinical e-Logbook", href: "/student/elogbook", icon: Scroll },
             { title: "Messages", href: "/student/messages", icon: MessageSquare },
-            { title: "Recommendations", href: "/student/recommendations", icon: BarChart3 },
           ],
         },
         {

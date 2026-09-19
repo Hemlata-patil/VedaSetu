@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { RecommendationList } from "./recommendation-list";
+import { RecommendationList } from "@/components/messages/recommendation-list";
 
 async function StudentRecommendationsContent() {
   const { user, profile } = await requireRole("student");
