@@ -145,6 +145,7 @@ function getNavSectionsForRole(role: "student" | "faculty" | "institution" | "in
             { title: "Internship & Placement", href: "/student/internship-placement", icon: Award },
             { title: "My Portfolio", href: "/student/portfolio", icon: Scroll },
             { title: "My Mentorship", href: "/student/mentorship", icon: GraduationCap },
+            { title: "Clinical e-Logbook", href: "/student/elogbook", icon: Scroll },
           ],
         },
         {
