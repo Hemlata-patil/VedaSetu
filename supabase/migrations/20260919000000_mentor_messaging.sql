@@ -13,14 +13,17 @@ CREATE TABLE IF NOT EXISTS public.mentorship_pairs (
 
 ALTER TABLE public.mentorship_pairs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Students can view their own mentorship pairs" ON public.mentorship_pairs;
 CREATE POLICY "Students can view their own mentorship pairs" 
 ON public.mentorship_pairs FOR SELECT 
 USING (auth.uid() = student_id);
 
+DROP POLICY IF EXISTS "Mentors can view their own mentorship pairs" ON public.mentorship_pairs;
 CREATE POLICY "Mentors can view their own mentorship pairs" 
 ON public.mentorship_pairs FOR SELECT 
 USING (auth.uid() = mentor_id);
 
+DROP POLICY IF EXISTS "Mentors can insert pairs" ON public.mentorship_pairs;
 CREATE POLICY "Mentors can insert pairs" 
 ON public.mentorship_pairs FOR INSERT 
 WITH CHECK (auth.uid() = mentor_id);
@@ -37,14 +40,17 @@ CREATE TABLE IF NOT EXISTS public.mentor_conversations (
 
 ALTER TABLE public.mentor_conversations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Students can view their own conversations" ON public.mentor_conversations;
 CREATE POLICY "Students can view their own conversations" 
 ON public.mentor_conversations FOR SELECT 
 USING (auth.uid() = student_id);
 
+DROP POLICY IF EXISTS "Mentors can view their own conversations" ON public.mentor_conversations;
 CREATE POLICY "Mentors can view their own conversations" 
 ON public.mentor_conversations FOR SELECT 
 USING (auth.uid() = mentor_id);
 
+DROP POLICY IF EXISTS "Mentors can insert conversations" ON public.mentor_conversations;
 CREATE POLICY "Mentors can insert conversations" 
 ON public.mentor_conversations FOR INSERT 
 WITH CHECK (auth.uid() = mentor_id);
@@ -63,6 +69,7 @@ CREATE TABLE IF NOT EXISTS public.mentor_messages (
 ALTER TABLE public.mentor_messages ENABLE ROW LEVEL SECURITY;
 
 -- Policy for viewing messages
+DROP POLICY IF EXISTS "Users can view messages in their conversations" ON public.mentor_messages;
 CREATE POLICY "Users can view messages in their conversations" 
 ON public.mentor_messages FOR SELECT 
 USING (
@@ -74,6 +81,7 @@ USING (
 );
 
 -- Policy for inserting messages
+DROP POLICY IF EXISTS "Users can send messages to their conversations" ON public.mentor_messages;
 CREATE POLICY "Users can send messages to their conversations" 
 ON public.mentor_messages FOR INSERT 
 WITH CHECK (
@@ -102,25 +110,23 @@ CREATE TABLE IF NOT EXISTS public.mentor_recommendations (
 
 ALTER TABLE public.mentor_recommendations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Students can view their recommendations" ON public.mentor_recommendations;
 CREATE POLICY "Students can view their recommendations" 
 ON public.mentor_recommendations FOR SELECT 
 USING (auth.uid() = student_id);
 
+DROP POLICY IF EXISTS "Mentors can view their recommendations" ON public.mentor_recommendations;
 CREATE POLICY "Mentors can view their recommendations" 
 ON public.mentor_recommendations FOR SELECT 
 USING (auth.uid() = mentor_id);
 
+DROP POLICY IF EXISTS "Mentors can insert recommendations" ON public.mentor_recommendations;
 CREATE POLICY "Mentors can insert recommendations" 
 ON public.mentor_recommendations FOR INSERT 
 WITH CHECK (auth.uid() = mentor_id);
 
+DROP POLICY IF EXISTS "Students can update recommendation status" ON public.mentor_recommendations;
 CREATE POLICY "Students can update recommendation status" 
 ON public.mentor_recommendations FOR UPDATE 
 USING (auth.uid() = student_id)
 WITH CHECK (auth.uid() = student_id);
-
-
--- Enable Realtime for mentor_messages
--- Drop first to prevent errors if already published
-DROP PUBLICATION IF EXISTS supabase_realtime;
-CREATE PUBLICATION supabase_realtime FOR TABLE public.mentor_messages;

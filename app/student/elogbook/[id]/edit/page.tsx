@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock, FileQuestion, AlertCircle, Database } from "lucide-react";
 
-export default function EditCasePage() {
+// Inner component: uses useParams — must be inside Suspense at the page boundary
+function EditCaseContent() {
   const params = useParams();
   const router = useRouter();
   const caseId = params?.id as string;
@@ -166,5 +167,23 @@ export default function EditCasePage() {
         <CaseForm existingCase={caseLog} isEditMode={true} />
       </div>
     </DashboardShell>
+  );
+}
+
+// Page export: wraps EditCaseContent in Suspense so useParams() doesn't block
+// static prerendering (Next.js 16 requirement)
+export default function EditCasePage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-ayush-parchment">
+          <div className="animate-pulse font-heading text-lg text-ayush-dark">
+            Loading Edit Case...
+          </div>
+        </div>
+      }
+    >
+      <EditCaseContent />
+    </React.Suspense>
   );
 }

@@ -14,7 +14,10 @@ import {
   CheckCircle2,
   ChevronRight,
   Compass,
-  FileText,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  History,
   GraduationCap,
   Sparkles,
   TrendingUp,
@@ -98,6 +101,28 @@ async function AssessmentResultContent({ params }: ResultPageProps) {
     redirect(`/student/assessment/${attemptId}`);
   }
 
+  // 2a. Fetch the most recent PREVIOUS submitted attempt for the same template
+  //     (any submitted attempt older than the current one)
+  const { data: previousAttempt } = await supabase
+    .from("assessment_attempts")
+    .select("id, total_score, submitted_at")
+    .eq("student_id", user.id)
+    .eq("assessment_template_id", attempt.assessment_template_id)
+    .eq("status", "submitted")
+    .neq("id", attemptId)
+    .order("submitted_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const prevScore = previousAttempt ? Math.round(Number(previousAttempt.total_score) || 0) : null;
+  const prevDate = previousAttempt?.submitted_at
+    ? new Date(previousAttempt.submitted_at).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+
   // 2. Fetch all student competencies for this student
   const { data: studentCompetencies } = await supabase
     .from("student_competencies")
@@ -162,6 +187,7 @@ async function AssessmentResultContent({ params }: ResultPageProps) {
   }
 
   const overallScore = Math.round(Number(attempt.total_score) || 0);
+  const scoreDelta = prevScore !== null ? overallScore - prevScore : null;
 
   const formattedDate = attempt.submitted_at
     ? new Date(attempt.submitted_at).toLocaleDateString("en-IN", {
@@ -302,6 +328,114 @@ async function AssessmentResultContent({ params }: ResultPageProps) {
         </Card>
       </div>
 
+      {/* Score Comparison Panel — only shown for reassessments */}
+      {prevScore !== null && scoreDelta !== null && (
+        <div className="mb-8">
+          <div className="mb-4">
+            <h3 className="font-heading text-2xl font-bold text-ayush-dark flex items-center gap-2">
+              <History className="w-6 h-6 text-ayush-saffron" />
+              Reassessment Score Comparison
+            </h3>
+            <p className="text-xs text-ayush-muted mt-1">
+              Comparing your previous attempt with this reassessment.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Previous Score */}
+            <Card className="border border-ayush-border/60">
+              <CardHeader className="pb-2">
+                <span className="text-xs uppercase tracking-wider text-ayush-muted font-medium">Previous Score</span>
+                <CardTitle className="text-base font-semibold text-ayush-muted">{prevDate}</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-1">
+                <div className="flex items-end gap-1">
+                  <span className="font-heading text-5xl font-bold text-ayush-dark">{prevScore}</span>
+                  <span className="text-sm text-ayush-muted mb-1.5">/ 100</span>
+                </div>
+                <Progress value={prevScore} max={100} variant="saffron" size="md" className="mt-3" />
+              </CardContent>
+            </Card>
+
+            {/* Change Indicator */}
+            <Card
+              className={`border ${
+                scoreDelta > 0
+                  ? "border-ayush-green/60 bg-ayush-green/5"
+                  : scoreDelta < 0
+                  ? "border-red-300/60 bg-red-50/30"
+                  : "border-ayush-border/60 bg-ayush-sand/20"
+              } flex flex-col items-center justify-center text-center`}
+            >
+              <CardContent className="pt-6 pb-6 flex flex-col items-center gap-3">
+                <div
+                  className={`p-3 rounded-full ${
+                    scoreDelta > 0
+                      ? "bg-ayush-green/10 text-ayush-green"
+                      : scoreDelta < 0
+                      ? "bg-red-100 text-red-500"
+                      : "bg-ayush-sand text-ayush-muted"
+                  }`}
+                >
+                  {scoreDelta > 0 ? (
+                    <ArrowUp className="w-8 h-8" />
+                  ) : scoreDelta < 0 ? (
+                    <ArrowDown className="w-8 h-8" />
+                  ) : (
+                    <Minus className="w-8 h-8" />
+                  )}
+                </div>
+                <div>
+                  <span
+                    className={`font-heading text-4xl font-bold ${
+                      scoreDelta > 0
+                        ? "text-ayush-green"
+                        : scoreDelta < 0
+                        ? "text-red-500"
+                        : "text-ayush-muted"
+                    }`}
+                  >
+                    {scoreDelta > 0 ? `+${scoreDelta}` : scoreDelta}
+                  </span>
+                  <span className="text-sm text-ayush-muted"> pts</span>
+                </div>
+                <Badge
+                  variant={scoreDelta > 0 ? "herbal" : scoreDelta < 0 ? "saffron" : "parchment"}
+                >
+                  {scoreDelta > 0
+                    ? "Score Improved"
+                    : scoreDelta < 0
+                    ? "Score Declined"
+                    : "No Change"}
+                </Badge>
+              </CardContent>
+            </Card>
+
+            {/* New Score */}
+            <Card accent="green" className="border border-ayush-green/40">
+              <CardHeader className="pb-2">
+                <span className="text-xs uppercase tracking-wider text-ayush-muted font-medium">This Attempt</span>
+                <CardTitle className="text-base font-semibold text-ayush-green">Latest Result</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-1">
+                <div className="flex items-end gap-1">
+                  <span className="font-heading text-5xl font-bold text-ayush-green">{overallScore}</span>
+                  <span className="text-sm text-ayush-muted mb-1.5">/ 100</span>
+                </div>
+                <Progress value={overallScore} max={100} variant="green" size="md" className="mt-3" />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Competency note */}
+          <p className="mt-3 text-[11px] text-ayush-muted bg-ayush-sand/30 border border-ayush-border/40 rounded-xl px-4 py-2.5">
+            <span className="font-semibold text-ayush-dark">Note: </span>
+            Your current competency breakdown below reflects <span className="font-medium">this reassessment only</span>.
+            Individual competency scores are updated to your latest attempt to keep your skill profile current.
+          </p>
+        </div>
+      )}
+
       {/* Competency Breakdown by Category */}
       <div className="space-y-6">
         <div>
@@ -374,13 +508,17 @@ async function AssessmentResultContent({ params }: ResultPageProps) {
             Your competency profile is permanently synchronized with your profile. You can reference these scores when exploring collaborative research, internships, and clinical rotations.
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Button asChild variant="outline" size="sm">
             <Link href="/student/dashboard">Dashboard</Link>
           </Button>
-          <Button asChild size="sm" className="gap-1.5 bg-ayush-green hover:bg-ayush-green/90 text-white">
-            <Link href="/student/skill-profile">
-              <span>View Skill Profile</span>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/student/skill-profile">Skill Profile</Link>
+          </Button>
+          <Button asChild size="sm" className="gap-1.5 bg-ayush-saffron hover:bg-ayush-saffron/90 text-white">
+            <Link href="/student/learning">
+              <Sparkles className="w-4 h-4" />
+              <span>AI Learning Roadmap</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
           </Button>

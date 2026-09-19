@@ -2,11 +2,25 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { startAssessment } from "./actions";
 
-export function StartAssessmentButton({ templateId }: { templateId: string }) {
+interface StartAssessmentButtonProps {
+  templateId: string;
+  label?: string;
+  forceNew?: boolean;
+  className?: string;
+  variant?: "default" | "outline" | "herbal" | "saffron" | "destructive" | "secondary";
+}
+
+export function StartAssessmentButton({
+  templateId,
+  label,
+  forceNew = false,
+  className,
+  variant = "default",
+}: StartAssessmentButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -15,7 +29,7 @@ export function StartAssessmentButton({ templateId }: { templateId: string }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await startAssessment(templateId);
+      const res = await startAssessment(templateId, forceNew);
       if (res?.attemptId) {
         router.push(`/student/assessment/${res.attemptId}`);
       }
@@ -25,22 +39,31 @@ export function StartAssessmentButton({ templateId }: { templateId: string }) {
     }
   }
 
+  const defaultLabel = forceNew ? "Retake Assessment" : "Begin Assessment";
+  const displayLabel = label || defaultLabel;
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       <Button
         onClick={handleStart}
         disabled={loading}
-        className="w-full gap-2 bg-ayush-green hover:bg-ayush-green/90 text-white shadow-warm transition-all hover:translate-y-[-1px]"
+        className={
+          className ||
+          (forceNew
+            ? "w-full gap-2 bg-ayush-saffron hover:bg-ayush-saffron/90 text-white shadow-warm transition-all hover:translate-y-[-1px]"
+            : "w-full gap-2 bg-ayush-green hover:bg-ayush-green/90 text-white shadow-warm transition-all hover:translate-y-[-1px]")
+        }
       >
         {loading ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Starting Assessment...</span>
+            <span>{forceNew ? "Initializing Reassessment..." : "Starting Assessment..."}</span>
           </>
         ) : (
           <>
-            <span>Begin Assessment</span>
-            <ArrowRight className="w-4 h-4" />
+            {forceNew && <RotateCcw className="w-4 h-4 shrink-0" />}
+            <span>{displayLabel}</span>
+            <ArrowRight className="w-4 h-4 shrink-0" />
           </>
         )}
       </Button>

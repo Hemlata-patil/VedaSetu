@@ -10,9 +10,10 @@ import { fetchCaseLogByIdAction } from "@/app/student/elogbook/actions";
 import { ClinicalCaseLog } from "@/lib/elogbook/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock, FileQuestion, AlertCircle, Database } from "lucide-react";
+import { ArrowLeft, Clock, FileQuestion, Database } from "lucide-react";
 
-export default function CaseDetailPage() {
+// Inner component: uses useParams — must be inside Suspense at the page boundary
+function CaseDetailContent() {
   const params = useParams();
   const router = useRouter();
   const caseId = params?.id as string;
@@ -86,7 +87,8 @@ export default function CaseDetailPage() {
             {isTableMissing ? "Supabase Tables Not Ready" : "Case Record Not Found"}
           </h3>
           <p className="text-xs text-ayush-muted mt-1 mb-6">
-            {errorMessage || "The requested clinical case log could not be found or you do not have permission to view it."}
+            {errorMessage ||
+              "The requested clinical case log could not be found or you do not have permission to view it."}
           </p>
           <Link href="/student/elogbook">
             <Button variant="outline" size="sm">
@@ -128,5 +130,23 @@ export default function CaseDetailPage() {
         <CaseDetail caseLog={caseLog} />
       </div>
     </DashboardShell>
+  );
+}
+
+// Page export: wraps CaseDetailContent in Suspense so useParams() doesn't block
+// static prerendering (Next.js 16 requirement)
+export default function CaseDetailPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-ayush-parchment">
+          <div className="animate-pulse font-heading text-lg text-ayush-dark">
+            Loading Case Details...
+          </div>
+        </div>
+      }
+    >
+      <CaseDetailContent />
+    </React.Suspense>
   );
 }

@@ -11,37 +11,42 @@ export interface SaveAnswerParams {
   answerText?: string | null;
 }
 
-export async function startAssessment(templateId: string) {
+export async function startAssessment(templateId: string, forceNew = false) {
   const { user } = await requireRole("student");
   const supabase = await createClient();
 
-  // 1. Check if attempt already exists for this student & template
-  const { data: existingAttempt, error: fetchErr } = await supabase
-    .from("assessment_attempts")
-    .select("id, status")
-    .eq("student_id", user.id)
-    .eq("assessment_template_id", templateId)
-    .maybeSingle();
+  // 1. If not forcing a new attempt, check if an unfinished attempt already exists
+  if (!forceNew) {
+    const { data: inProgressAttempt, error: fetchErr } = await supabase
+      .from("assessment_attempts")
+      .select("id, status")
+      .eq("student_id", user.id)
+      .eq("assessment_template_id", templateId)
+      .in("status", ["not_started", "in_progress"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (fetchErr) {
-    throw new Error(`Failed to check existing attempt: ${fetchErr.message}`);
-  }
-
-  if (existingAttempt) {
-    if (existingAttempt.status === "not_started") {
-      // Transition from not_started -> in_progress (triggers started_at = now())
-      const { error: updErr } = await supabase
-        .from("assessment_attempts")
-        .update({ status: "in_progress" })
-        .eq("id", existingAttempt.id);
-
-      if (updErr) {
-        throw new Error(`Failed to resume attempt: ${updErr.message}`);
-      }
+    if (fetchErr) {
+      console.error("[startAssessment] Error checking in-progress attempt:", fetchErr.message);
     }
-    revalidatePath("/student/dashboard");
-    revalidatePath("/student/assessment");
-    return { attemptId: existingAttempt.id, status: existingAttempt.status };
+
+    if (inProgressAttempt) {
+      if (inProgressAttempt.status === "not_started") {
+        // Transition from not_started -> in_progress (triggers started_at = now())
+        const { error: updErr } = await supabase
+          .from("assessment_attempts")
+          .update({ status: "in_progress" })
+          .eq("id", inProgressAttempt.id);
+
+        if (updErr) {
+          throw new Error(`Failed to resume attempt: ${updErr.message}`);
+        }
+      }
+      revalidatePath("/student/dashboard");
+      revalidatePath("/student/assessment");
+      return { attemptId: inProgressAttempt.id, status: inProgressAttempt.status };
+    }
   }
 
   // 2. Create new attempt in 'not_started' status (strict RLS rule)

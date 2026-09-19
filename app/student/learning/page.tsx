@@ -25,6 +25,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { RecommendationCards } from "./recommendation-cards";
 import { RoadmapView } from "./roadmap-view";
+import { AiRoadmapPanel } from "./ai-roadmap-panel";
 
 export const metadata = {
   title: "Learning & Development — VEDA SETU",
@@ -56,6 +57,26 @@ async function LearningContent() {
   // 2. Build skill profile and personalized roadmap
   const profileData = buildStudentSkillProfile(rawRows as any);
   const roadmapData = buildPersonalizedRoadmap(profileData);
+
+  // 3. Fetch published assessment template for direct reassessment link
+  const { data: activeTemplate } = await supabase
+    .from("assessment_templates")
+    .select("id")
+    .eq("status", "published")
+    .limit(1)
+    .maybeSingle();
+
+  // 4. Check if student has any submitted attempt (to decide forceNew)
+  let hasSubmittedAttempt = false;
+  if (activeTemplate) {
+    const { count } = await supabase
+      .from("assessment_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("student_id", user.id)
+      .eq("assessment_template_id", activeTemplate.id)
+      .eq("status", "submitted");
+    hasSubmittedAttempt = (count ?? 0) > 0;
+  }
 
   return (
     <DashboardShell
@@ -101,6 +122,14 @@ async function LearningContent() {
       ) : (
         /* Full Personalized Roadmap & Learning Experience */
         <div className="space-y-10">
+          {/* AI-Powered Personalized Learning Roadmap (Groq Qwen 27B) */}
+          <AiRoadmapPanel
+            hasCompetencies={roadmapData.hasCompetencyData}
+            studentDepartment={profile?.department}
+            templateId={activeTemplate?.id ?? null}
+            hasSubmittedAttempt={hasSubmittedAttempt}
+          />
+
           {/* Important Platform Disclaimer */}
           <div className="rounded-xl border border-ayush-border/80 bg-ayush-card p-4 text-xs text-ayush-muted flex items-start gap-3 shadow-sm">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-ayush-herbal/10 text-ayush-herbal">
@@ -108,7 +137,7 @@ async function LearningContent() {
             </div>
             <div className="space-y-0.5">
               <p className="font-semibold text-ayush-dark">
-                Platform-Defined Guidance
+                Standard Platform Guidance & Competency Diagnostics
               </p>
               <p className="leading-relaxed">
                 This personalized roadmap and developmental milestones are generated suggestions designed to help guide your independent learning. They are platform-generated guidance and do not represent official NCISM curricular mandates.

@@ -37,17 +37,26 @@ async function AssessmentOverviewContent() {
     .limit(1)
     .maybeSingle();
 
-  // 2. Fetch existing attempt if any
-  let attempt = null;
+  // 2. Fetch existing attempts for this student & template
+  let inProgressAttempt = null;
+  let latestSubmittedAttempt = null;
+  let totalSubmittedCount = 0;
+
   if (template) {
-    const { data: existingAttempt } = await supabase
+    const { data: attempts } = await supabase
       .from("assessment_attempts")
-      .select("id, status, total_score, started_at, submitted_at")
+      .select("id, status, total_score, started_at, submitted_at, created_at")
       .eq("student_id", user.id)
       .eq("assessment_template_id", template.id)
-      .maybeSingle();
+      .order("created_at", { ascending: false });
 
-    attempt = existingAttempt;
+    if (attempts && attempts.length > 0) {
+      inProgressAttempt = attempts.find(
+        (a) => a.status === "in_progress" || a.status === "not_started"
+      ) || null;
+      latestSubmittedAttempt = attempts.find((a) => a.status === "submitted") || null;
+      totalSubmittedCount = attempts.filter((a) => a.status === "submitted").length;
+    }
   }
 
   return (
@@ -215,32 +224,41 @@ async function AssessmentOverviewContent() {
                   </div>
                   <div className="flex justify-between items-center py-2">
                     <span className="text-ayush-muted">Current Status</span>
-                    {attempt?.status === "submitted" ? (
-                      <Badge variant="herbal" dot>Completed</Badge>
-                    ) : attempt?.status === "in_progress" || attempt?.status === "not_started" ? (
+                    {inProgressAttempt ? (
                       <Badge variant="saffron" dot>In Progress</Badge>
+                    ) : latestSubmittedAttempt ? (
+                      <Badge variant="herbal" dot>
+                        {totalSubmittedCount > 1 ? `Completed (${totalSubmittedCount} Attempts)` : "Completed"}
+                      </Badge>
                     ) : (
                       <Badge variant="outline">Available</Badge>
                     )}
                   </div>
                 </div>
 
-                {/* Primary CTA */}
-                <div className="pt-2">
-                  {attempt?.status === "submitted" ? (
-                    <Button asChild className="w-full gap-2" variant="default">
-                      <Link href={`/student/assessment/result/${attempt.id}`}>
-                        <span>View Assessment Results</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                  ) : attempt?.status === "in_progress" || attempt?.status === "not_started" ? (
+                {/* Primary CTA Area */}
+                <div className="pt-2 space-y-2.5">
+                  {inProgressAttempt ? (
                     <Button asChild className="w-full gap-2 bg-ayush-green hover:bg-ayush-green/90 text-white">
-                      <Link href={`/student/assessment/${attempt.id}`}>
+                      <Link href={`/student/assessment/${inProgressAttempt.id}`}>
                         <span>Continue Assessment</span>
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </Button>
+                  ) : latestSubmittedAttempt ? (
+                    <>
+                      <StartAssessmentButton
+                        templateId={template.id}
+                        label="Retake / Start Reassessment"
+                        forceNew
+                      />
+                      <Button asChild className="w-full gap-2" variant="outline" size="sm">
+                        <Link href={`/student/assessment/result/${latestSubmittedAttempt.id}`}>
+                          <span>View Latest Results</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+                      </Button>
+                    </>
                   ) : (
                     <StartAssessmentButton templateId={template.id} />
                   )}
