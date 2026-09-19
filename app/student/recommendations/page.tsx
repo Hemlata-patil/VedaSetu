@@ -1,9 +1,10 @@
+import { Suspense } from "react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { RecommendationList } from "./recommendation-list";
 
-export default async function StudentRecommendationsPage() {
+async function StudentRecommendationsContent() {
   const { user, profile } = await requireRole("student");
   const supabase = await createClient();
 
@@ -32,5 +33,19 @@ export default async function StudentRecommendationsPage() {
         <RecommendationList initialRecommendations={recommendations || []} />
       </div>
     </DashboardShell>
+  );
+}
+
+export default function StudentRecommendationsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center p-8 text-ayush-muted">
+          Loading recommendations...
+        </div>
+      }
+    >
+      <StudentRecommendationsContent />
+    </Suspense>
   );
 }

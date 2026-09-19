@@ -1,9 +1,10 @@
+import { Suspense } from "react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { FacultyMessagesClient } from "./faculty-messages-client";
 
-export default async function FacultyMessagesPage() {
+async function FacultyMessagesContent() {
   const { user, profile } = await requireRole("faculty");
   const supabase = await createClient();
 
@@ -28,5 +29,19 @@ export default async function FacultyMessagesPage() {
     >
       <FacultyMessagesClient currentUser={user} students={students} />
     </DashboardShell>
+  );
+}
+
+export default function FacultyMessagesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center p-8 text-ayush-muted">
+          Loading messages...
+        </div>
+      }
+    >
+      <FacultyMessagesContent />
+    </Suspense>
   );
 }

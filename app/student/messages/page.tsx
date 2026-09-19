@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { ChatClient } from "@/components/messages/chat-client";
 
-export default async function StudentMessagesPage() {
+async function StudentMessagesContent() {
   const { user, profile } = await requireRole("student");
   const supabase = await createClient();
 
@@ -62,13 +62,11 @@ export default async function StudentMessagesPage() {
     >
       <div className="h-[calc(100vh-12rem)] min-h-[500px]">
         {conversation ? (
-          <Suspense fallback={<div>Loading chat...</div>}>
-            <ChatClient 
-              conversationId={conversation.id} 
-              currentUser={user} 
-              otherUser={activeMentorship.mentor} 
-            />
-          </Suspense>
+          <ChatClient
+            conversationId={conversation.id}
+            currentUser={user}
+            otherUser={activeMentorship.mentor}
+          />
         ) : (
           <div className="flex h-full items-center justify-center">
             <p className="text-ayush-muted">Conversation initializing...</p>
@@ -76,5 +74,19 @@ export default async function StudentMessagesPage() {
         )}
       </div>
     </DashboardShell>
+  );
+}
+
+export default function StudentMessagesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center p-8 text-ayush-muted">
+          Loading messages...
+        </div>
+      }
+    >
+      <StudentMessagesContent />
+    </Suspense>
   );
 }
