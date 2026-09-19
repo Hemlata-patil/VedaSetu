@@ -110,7 +110,11 @@ export function FacultyMessagesClient({ currentUser, students }: { currentUser: 
                 <ChatClient 
                   conversationId={conversationId}
                   currentUser={currentUser}
-                  otherUser={selectedStudent}
+                  otherUser={{
+                    id: selectedStudent.id,
+                    full_name: selectedStudent.full_name,
+                    avatar_url: selectedStudent.avatar_url || undefined,
+                  }}
                 />
               </div>
             </div>

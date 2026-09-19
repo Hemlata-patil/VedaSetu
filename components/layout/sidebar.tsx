@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LotusEmblem } from "@/components/ui/motifs";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -25,6 +24,7 @@ import {
   BarChart3,
   Microscope,
   Scroll,
+  MessageSquare,
 } from "lucide-react";
 
 import { AdminAccessModal } from "@/components/auth/admin-access-modal";
@@ -83,7 +83,8 @@ function getNavSectionsForRole(role: "student" | "faculty" | "institution" | "in
             { title: "Faculty Dashboard", href: dashboardPath, icon: LayoutDashboard },
             { title: "My Students", href: "/faculty/students", icon: Users },
             { title: "Mentorship", href: "/faculty/mentorship", icon: GraduationCap },
-            { title: "Messages", href: "/faculty/messages", icon: Scroll },
+            { title: "Clinical e-Logbook", href: "/faculty/elogbook", icon: Scroll },
+            { title: "Messages", href: "/faculty/messages", icon: MessageSquare },
             { title: "FDP & Research", href: "/faculty/collaboration", icon: Microscope },
           ],
         },
@@ -146,7 +147,9 @@ function getNavSectionsForRole(role: "student" | "faculty" | "institution" | "in
             { title: "Internship & Placement", href: "/student/internship-placement", icon: Award },
             { title: "My Portfolio", href: "/student/portfolio", icon: Scroll },
             { title: "My Mentorship", href: "/student/mentorship", icon: GraduationCap },
-            { title: "Messages", href: "/student/messages", icon: FileCheck2 },
+            { title: "Clinical e-Logbook", href: "/student/elogbook", icon: Scroll },
+            { title: "Messages", href: "/student/messages", icon: MessageSquare },
+            { title: "Recommendations", href: "/student/recommendations", icon: BarChart3 },
           ],
         },
         {
