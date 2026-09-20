@@ -400,3 +400,150 @@ export async function createIndustryWithAdmin(params: CreateIndustryParams) {
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// UUID validation helper (server-side only)
+// ─────────────────────────────────────────────────────────────────────────────
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export interface UpdateInstitutionDetailsParams {
+  name?: string;
+  /** Pass null to clear the code field. Omit entirely to leave unchanged. */
+  code?: string | null;
+  category?: string;
+  location?: string;
+}
+
+/**
+ * Super Admin Action: Edit permitted fields on an Institution record.
+ * Allowed fields: name, code, category, location.
+ * Does NOT modify verification_status, id, or any relational/profile data.
+ */
+export async function updateInstitutionDetails(
+  institutionId: string,
+  params: UpdateInstitutionDetailsParams
+) {
+  await requireSuperAdmin();
+
+  const id = (institutionId ?? "").trim();
+  if (!id || !UUID_RE.test(id)) {
+    throw new Error("Invalid institution ID.");
+  }
+
+  const updates: Record<string, string | null> = {};
+
+  if (params.name !== undefined) {
+    const name = params.name.trim();
+    if (!name) throw new Error("Institution name cannot be empty.");
+    if (name.length > 200) throw new Error("Institution name is too long (max 200 characters).");
+    updates.name = name;
+  }
+
+  if ("code" in params) {
+    // null means clear the unique code
+    updates.code = params.code?.trim()?.toUpperCase() ?? null;
+  }
+
+  if (params.category !== undefined) {
+    const category = params.category.trim();
+    if (!category) throw new Error("Category cannot be empty.");
+    updates.category = category;
+  }
+
+  if (params.location !== undefined) {
+    updates.location = params.location.trim() || "India";
+  }
+
+  if (Object.keys(updates).length === 0) {
+    throw new Error("No fields provided for update.");
+  }
+
+  const adminClient = createAdminClient();
+
+  // Verify the record exists before writing
+  const { data: existing, error: fetchErr } = await adminClient
+    .from("institutions")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchErr) throw new Error(`Failed to verify institution: ${fetchErr.message}`);
+  if (!existing) throw new Error("Institution not found.");
+
+  const { error } = await adminClient
+    .from("institutions")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) throw new Error(`Failed to update institution: ${error.message}`);
+
+  revalidatePath("/super-admin/institutions");
+  revalidatePath("/super-admin/dashboard");
+  return { success: true };
+}
+
+export interface UpdateOrganizationDetailsParams {
+  name?: string;
+  organization_type?: string;
+  location?: string;
+}
+
+/**
+ * Super Admin Action: Edit permitted fields on an Organization/Industry record.
+ * Allowed fields: name, organization_type, location.
+ * Does NOT modify verification_status, id, or any relational/profile data.
+ */
+export async function updateOrganizationDetails(
+  organizationId: string,
+  params: UpdateOrganizationDetailsParams
+) {
+  await requireSuperAdmin();
+
+  const id = (organizationId ?? "").trim();
+  if (!id || !UUID_RE.test(id)) {
+    throw new Error("Invalid organization ID.");
+  }
+
+  const updates: Record<string, string> = {};
+
+  if (params.name !== undefined) {
+    const name = params.name.trim();
+    if (!name) throw new Error("Organization name cannot be empty.");
+    if (name.length > 200) throw new Error("Organization name is too long (max 200 characters).");
+    updates.name = name;
+  }
+
+  if (params.organization_type !== undefined) {
+    updates.organization_type = params.organization_type.trim() || "Pharmaceutical / Healthcare";
+  }
+
+  if (params.location !== undefined) {
+    updates.location = params.location.trim() || "India";
+  }
+
+  if (Object.keys(updates).length === 0) {
+    throw new Error("No fields provided for update.");
+  }
+
+  const adminClient = createAdminClient();
+
+  // Verify the record exists before writing
+  const { data: existing, error: fetchErr } = await adminClient
+    .from("organizations")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchErr) throw new Error(`Failed to verify organization: ${fetchErr.message}`);
+  if (!existing) throw new Error("Organization not found.");
+
+  const { error } = await adminClient
+    .from("organizations")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) throw new Error(`Failed to update organization: ${error.message}`);
+
+  revalidatePath("/super-admin/industries");
+  revalidatePath("/super-admin/dashboard");
+  return { success: true };
+}
