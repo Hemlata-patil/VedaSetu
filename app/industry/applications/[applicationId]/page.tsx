@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -41,7 +41,7 @@ interface CandidateDetailPageProps {
 async function CandidateDetailContent(props: CandidateDetailPageProps) {
   const { applicationId } = await props.params;
   const { user, profile } = await requireRole("industry");
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // 1. Fetch application details with candidate profile and opportunity requirements
   const { data: application, error } = await supabase

@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -39,7 +39,8 @@ const STATUS_CONFIG: Record<
 
 async function IndustryPlacementContent() {
   const { user, profile } = await requireRole("industry");
-  const supabase = await createClient();
+  const supabaseAuth = await createClient();
+  const supabase = createAdminClient();
 
   // 1. Fetch selected applications for opportunities created by this industry user
   const { data: selectedApps } = await supabase

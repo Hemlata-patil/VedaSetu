@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
+import { StudentPlacementActions } from "@/components/placement/student-placement-actions";
 
 export const metadata = {
   title: "Internship & Placement — Student Portal",
@@ -293,6 +294,12 @@ async function StudentPlacementContent() {
                     )}
                   </div>
                 </CardContent>
+
+                {placement.status === "selected" && (
+                  <div className="px-6 pb-4">
+                    <StudentPlacementActions placementId={placement.id} />
+                  </div>
+                )}
               </Card>
             );
           })}

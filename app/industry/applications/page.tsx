@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card } from "@/components/ui/card";
@@ -31,7 +31,8 @@ export const metadata = {
 
 async function IndustryApplicationsContent() {
   const { user, profile } = await requireRole("industry");
-  const supabase = await createClient();
+  const supabaseAuth = await createClient(); // For auth
+  const supabase = createAdminClient(); // For bypassing RLS
 
   // 1. Fetch applications for opportunities created by this industry user
   const { data: applications } = await supabase
