@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -39,61 +39,77 @@ const STATUS_CONFIG: Record<
 
 async function StudentPlacementContent() {
   const { user, profile } = await requireRole("student");
-  const supabase = await createClient();
+  // We use admin client here because the internship_placements table lacks a direct student_id column
+  // for RLS to easily filter. We securely enforce student_id on the applications table instead.
+  const supabase = createAdminClient();
 
-  // 1. Fetch student's placement records via applications relationship
-  // RLS enforces: a.student_id = auth.uid()
-  const { data: placements, error } = await supabase
-    .from("internship_placements")
+  // 1. Fetch student's placement records by querying applications first
+  // This avoids RLS issues since applications table has student_id
+  const { data: applicationsWithPlacements, error } = await supabase
+    .from("applications")
     .select(`
       id,
-      engagement_type,
+      opportunity_id,
       status,
-      start_date,
-      expected_end_date,
-      actual_end_date,
-      progress_percent,
-      supervisor_name,
-      supervisor_email,
-      outcome,
-      created_at,
-      updated_at,
-      applications!inner (
+      applied_at,
+      opportunities!inner (
         id,
-        opportunity_id,
-        status,
-        applied_at,
-        opportunities!inner (
+        title,
+        opportunity_type,
+        location,
+        organizations (
           id,
-          title,
-          opportunity_type,
-          location,
-          mode,
-          organizations (
-            id,
-            name,
-            organization_type,
-            location
-          )
+          name,
+          organization_type,
+          location
         )
+      ),
+      internship_placements!inner (
+        id,
+        engagement_type,
+        status,
+        start_date,
+        expected_end_date,
+        actual_end_date,
+        progress_percent,
+        supervisor_name,
+        supervisor_email,
+        outcome,
+        created_at,
+        updated_at
       )
     `)
-    .order("created_at", { ascending: false });
+    .eq("student_id", user.id);
 
-  const placementList = (placements || []).map((p: any) => {
-    const opp = Array.isArray(p.applications?.opportunities)
-      ? p.applications?.opportunities[0]
-      : p.applications?.opportunities;
+  if (error) {
+    throw new Error(`Database query failed: ${error.message} - ${error.details || ''} - ${error.hint || ''}`);
+  }
+
+  const placementList = (applicationsWithPlacements || []).map((app: any) => {
+    const placement = Array.isArray(app.internship_placements) 
+      ? app.internship_placements[0] 
+      : app.internship_placements;
+      
+    const opp = Array.isArray(app.opportunities)
+      ? app.opportunities[0]
+      : app.opportunities;
+      
     const org = Array.isArray(opp?.organizations)
       ? opp?.organizations[0]
       : opp?.organizations;
 
     return {
-      ...p,
+      ...placement,
+      applications: {
+        id: app.id,
+        opportunity_id: app.opportunity_id,
+        status: app.status,
+        applied_at: app.applied_at
+      },
       opportunity: opp,
       organization: org,
     };
-  });
+  }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
     <DashboardShell

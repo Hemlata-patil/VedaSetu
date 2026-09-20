@@ -46,13 +46,28 @@ export default async function StudentMessagesPage() {
     );
   }
 
-  // 2. Fetch conversation
-  const { data: conversation } = await supabase
+  // 2. Fetch or create conversation
+  let { data: conversation } = await supabase
     .from("mentor_conversations")
     .select("id")
     .eq("student_id", user.id)
     .eq("mentor_id", activeMentorship.faculty_id)
     .maybeSingle();
+
+  if (!conversation) {
+    // Auto-create if missing
+    await supabase.from("mentor_conversations").upsert(
+      { student_id: user.id, mentor_id: activeMentorship.faculty_id },
+      { onConflict: "student_id, mentor_id", ignoreDuplicates: true }
+    );
+    const { data: newConv } = await supabase
+      .from("mentor_conversations")
+      .select("id")
+      .eq("student_id", user.id)
+      .eq("mentor_id", activeMentorship.faculty_id)
+      .maybeSingle();
+    conversation = newConv;
+  }
 
   // 3. Fetch recommendations
   const { data: recommendations } = await supabase

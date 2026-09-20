@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { ChatClient } from "@/components/messages/chat-client";
 import { getConversation, createRecommendation } from "@/app/messages/actions";
-import { User, Plus } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { User, Plus, FileText, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Student {
@@ -23,6 +24,11 @@ export function FacultyMessagesClient({ currentUser, students }: { currentUser: 
   const [recType, setRecType] = useState("skill");
   const [recPriority, setRecPriority] = useState("medium");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Status check modal state
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [sentRecs, setSentRecs] = useState<any[]>([]);
+  const [isLoadingRecs, setIsLoadingRecs] = useState(false);
 
   useEffect(() => {
     if (selectedStudent) {
@@ -51,6 +57,22 @@ export function FacultyMessagesClient({ currentUser, students }: { currentUser: 
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleViewStatus = async () => {
+    if (!selectedStudent) return;
+    setIsLoadingRecs(true);
+    setShowStatusModal(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("mentor_recommendations")
+      .select("*")
+      .eq("student_id", selectedStudent.id)
+      .eq("mentor_id", currentUser.id)
+      .order("created_at", { ascending: false });
+    
+    if (data) setSentRecs(data);
+    setIsLoadingRecs(false);
   };
 
   return (
@@ -97,7 +119,14 @@ export function FacultyMessagesClient({ currentUser, students }: { currentUser: 
         {selectedStudent ? (
           conversationId ? (
             <div className="flex h-full flex-col space-y-4">
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleViewStatus}
+                  className="flex items-center gap-2 rounded-lg border border-ayush-brown/30 bg-ayush-sand px-4 py-2 text-sm font-medium text-ayush-brown transition-opacity hover:bg-ayush-sand/70"
+                >
+                  <FileText className="h-4 w-4" />
+                  Check Status
+                </button>
                 <button
                   onClick={() => setShowRecModal(true)}
                   className="flex items-center gap-2 rounded-lg bg-ayush-green px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
@@ -172,6 +201,54 @@ export function FacultyMessagesClient({ currentUser, students }: { currentUser: 
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Recommendation Status Modal */}
+      {showStatusModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between mb-4 border-b border-ayush-border/60 pb-3">
+              <h3 className="text-lg font-bold text-ayush-dark">Recommendation Status</h3>
+              <button onClick={() => setShowStatusModal(false)} className="text-ayush-muted hover:text-ayush-dark">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+              {isLoadingRecs ? (
+                <div className="py-8 text-center text-sm text-ayush-muted">Loading recommendations...</div>
+              ) : sentRecs.length === 0 ? (
+                <div className="py-8 text-center text-sm text-ayush-muted">You haven't sent any recommendations to this student yet.</div>
+              ) : (
+                sentRecs.map(rec => (
+                  <div key={rec.id} className="rounded-lg border border-ayush-border/70 p-3 bg-ayush-sand/20">
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="font-semibold text-ayush-dark text-sm">{rec.title}</h4>
+                      <span className={cn(
+                        "text-[10px] px-2 py-0.5 rounded-full font-medium capitalize",
+                        rec.status === "completed" ? "bg-ayush-green/20 text-ayush-green" :
+                        rec.status === "in_progress" ? "bg-ayush-saffron/20 text-ayush-saffron" :
+                        "bg-ayush-sand text-ayush-muted"
+                      )}>
+                        {rec.status.replace("_", " ")}
+                      </span>
+                    </div>
+                    <p className="text-xs text-ayush-muted mb-2 line-clamp-2">{rec.description}</p>
+                    <div className="flex gap-2 text-[10px] font-medium">
+                      <span className="bg-white border border-ayush-border/50 px-1.5 py-0.5 rounded text-ayush-brown">{rec.type}</span>
+                      <span className={cn(
+                        "bg-white border px-1.5 py-0.5 rounded",
+                        rec.priority === "high" ? "border-red-200 text-red-600" : "border-ayush-border/50 text-ayush-muted"
+                      )}>
+                        {rec.priority} priority
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

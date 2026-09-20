@@ -63,9 +63,27 @@ export async function updateCandidateStatus(params: UpdateCandidateStatusParams)
     throw new Error(`Failed to update candidate status: ${updateErr.message}`);
   }
 
+  // 4. Auto-create internship tracking record if selected
+  if (params.newStatus === "selected") {
+    // Try to determine engagement type from opportunity
+    const engagementType = opp.opportunity_type === "job" ? "placement" : "internship";
+    
+    const { error: placementErr } = await supabase.from("internship_placements").upsert({
+      application_id: params.applicationId,
+      engagement_type: engagementType,
+      status: "selected",
+      progress_percent: 0
+    }, { onConflict: "application_id", ignoreDuplicates: true });
+    
+    if (placementErr) {
+      throw new Error(`Internship record creation failed: ${placementErr.message}`);
+    }
+  }
+
   revalidatePath("/industry/applications");
   revalidatePath(`/industry/applications/${params.applicationId}`);
   revalidatePath("/student/applications");
+  revalidatePath("/student/internship-placement");
 
   return { success: true };
 }

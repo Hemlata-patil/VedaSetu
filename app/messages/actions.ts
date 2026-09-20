@@ -52,6 +52,22 @@ export async function getConversation(studentId?: string, mentorId?: string) {
     throw new Error(`Failed to fetch conversation: ${error.message}`);
   }
 
+  if (!data) {
+    // We need target student and mentor ids to auto-create
+    let targetStudentId = profile?.role === "student" ? user.id : studentId;
+    let targetMentorId = profile?.role === "faculty" ? user.id : mentorId;
+    
+    if (targetStudentId && targetMentorId) {
+      await supabase.from("mentor_conversations").upsert(
+        { student_id: targetStudentId, mentor_id: targetMentorId },
+        { onConflict: "student_id, mentor_id", ignoreDuplicates: true }
+      );
+      
+      const { data: newData, error: newError } = await query.maybeSingle();
+      if (!newError && newData) return newData;
+    }
+  }
+
   return data;
 }
 
@@ -80,6 +96,7 @@ export async function createRecommendation(conversationId: string, studentId: st
   }
 
   revalidatePath("/faculty/messages");
+  revalidatePath("/student/messages");
   
   return { success: true };
 }
