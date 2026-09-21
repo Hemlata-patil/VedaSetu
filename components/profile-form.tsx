@@ -25,6 +25,10 @@ export function ProfileForm({ profile, email }: ProfileFormProps) {
   const [program, setProgram] = React.useState(profile.program || "");
   const [year, setYear] = React.useState(profile.year ? String(profile.year) : "");
   const [avatarUrl, setAvatarUrl] = React.useState(profile.avatar_url || "");
+  const [qualification, setQualification] = React.useState(profile.qualification || "");
+  const [semester, setSemester] = React.useState(profile.semester || "");
+  const [skillsText, setSkillsText] = React.useState(profile.skills?.join(", ") || "");
+  const [interestsText, setInterestsText] = React.useState(profile.career_interests?.join(", ") || "");
 
   const [isSaving, setIsSaving] = React.useState(false);
   const [statusMessage, setStatusMessage] = React.useState<{
@@ -50,6 +54,10 @@ export function ProfileForm({ profile, email }: ProfileFormProps) {
           program: program.trim() || null,
           year: year ? parseInt(year, 10) : null,
           avatar_url: avatarUrl.trim() || null,
+          qualification: qualification.trim() || null,
+          semester: semester.trim() || null,
+          skills: skillsText ? skillsText.split(",").map(s => s.trim()).filter(Boolean) : [],
+          career_interests: interestsText ? interestsText.split(",").map(s => s.trim()).filter(Boolean) : [],
         })
         .eq("id", profile.id);
 
@@ -188,6 +196,52 @@ export function ProfileForm({ profile, email }: ProfileFormProps) {
                   placeholder="e.g. 4"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="qualification">Qualification Level</Label>
+                <Input
+                  id="qualification"
+                  type="text"
+                  value={qualification}
+                  onChange={(e) => setQualification(e.target.value)}
+                  placeholder="e.g. Undergraduate (UG)"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="semester">Current Semester</Label>
+                <Input
+                  id="semester"
+                  type="text"
+                  value={semester}
+                  onChange={(e) => setSemester(e.target.value)}
+                  placeholder="e.g. Professional Year II"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="skills">Skills & Competencies (comma separated)</Label>
+              <Input
+                id="skills"
+                type="text"
+                value={skillsText}
+                onChange={(e) => setSkillsText(e.target.value)}
+                placeholder="e.g. Nadi Pariksha, Panchakarma"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="career_interests">Career Interests (comma separated)</Label>
+              <Input
+                id="career_interests"
+                type="text"
+                value={interestsText}
+                onChange={(e) => setInterestsText(e.target.value)}
+                placeholder="e.g. Clinical Practice, Research"
+              />
             </div>
 
             <div className="space-y-2">
