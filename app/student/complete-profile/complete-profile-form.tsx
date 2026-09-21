@@ -210,7 +210,7 @@ export function CompleteProfileForm({
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-ayush-primary" />
+              <User className="w-4 h-4 text-ayush-saffron" />
               <CardTitle className="text-base font-heading">Personal Coordinates</CardTitle>
             </div>
             <Badge variant="herbal" className="uppercase text-[10px]">
@@ -401,7 +401,7 @@ export function CompleteProfileForm({
       <Card className="border-ayush-border/80">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-ayush-primary" />
+            <Building2 className="w-4 h-4 text-ayush-saffron" />
             <CardTitle className="text-base font-heading">Affiliated Institution</CardTitle>
           </div>
           <CardDescription className="text-xs">
@@ -557,7 +557,7 @@ export function CompleteProfileForm({
                   onClick={() => toggleInterest(interest)}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
                     isSelected
-                      ? "bg-ayush-primary text-white shadow-xs"
+                      ? "bg-ayush-saffron text-white shadow-xs"
                       : "bg-ayush-sand/50 text-ayush-dark hover:bg-ayush-sand border border-ayush-border/60"
                   }`}
                 >
@@ -636,7 +636,7 @@ export function CompleteProfileForm({
           variant="default"
           size="lg"
           disabled={isSubmitting || hasNoInstitutions}
-          className="w-full sm:w-auto gap-2 bg-ayush-primary hover:bg-ayush-primary/90 font-medium text-sm"
+          className="w-full sm:w-auto gap-2 bg-ayush-saffron hover:bg-ayush-saffron/90 font-medium text-sm"
         >
           <span>{isSubmitting ? "Saving Profile..." : "Complete Profile & Enter Dashboard"}</span>
           <ArrowRight className="w-4 h-4" />
