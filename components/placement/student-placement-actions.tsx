@@ -36,7 +36,7 @@ export function StudentPlacementActions({ placementId }: StudentPlacementActions
         Decline Offer
       </Button>
       <Button 
-        variant="herbal" 
+        variant="secondary" 
         size="sm"
         onClick={() => handleAction("offer_accepted")}
         disabled={isLoading}

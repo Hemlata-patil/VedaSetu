@@ -10,6 +10,10 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // Global ignores — must be a standalone object (no other keys) to apply globally in flat config
+  {
+    ignores: ["node_modules/**", ".next/**", "scripts/**"],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 
