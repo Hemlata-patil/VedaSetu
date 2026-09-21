@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
+import { isStudentProfileComplete } from "../auth-helpers";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -70,7 +71,7 @@ export async function updateSession(request: NextRequest) {
   if (user && isProtectedRoute) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("*")
       .eq("id", user.id)
       .single();
 
@@ -87,8 +88,30 @@ export async function updateSession(request: NextRequest) {
 
     if (pathname === "/dashboard") {
       const url = request.nextUrl.clone();
-      url.pathname = getRoleDashboardPath(userRole);
+      if (userRole === "student") {
+        url.pathname = isStudentProfileComplete(profile) ? "/student/dashboard" : "/student/complete-profile";
+      } else {
+        url.pathname = getRoleDashboardPath(userRole);
+      }
       return NextResponse.redirect(url);
+    }
+
+    // Student-exclusive routing & mandatory profile completion barrier
+    if (userRole === "student") {
+      const isComplete = isStudentProfileComplete(profile);
+      if (pathname === "/student/complete-profile") {
+        if (isComplete) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/student/dashboard";
+          return NextResponse.redirect(url);
+        }
+        return supabaseResponse;
+      }
+      if (pathname.startsWith("/student") && !isComplete) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/student/complete-profile";
+        return NextResponse.redirect(url);
+      }
     }
 
     if (pathname.startsWith("/student") && userRole !== "student") {
@@ -126,7 +149,7 @@ export async function updateSession(request: NextRequest) {
   if (user && (pathname === "/auth/login" || pathname === "/auth/sign-up")) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("*")
       .eq("id", user.id)
       .single();
 
@@ -138,7 +161,11 @@ export async function updateSession(request: NextRequest) {
 
     const userRole = profile.role;
     const url = request.nextUrl.clone();
-    url.pathname = getRoleDashboardPath(userRole);
+    if (userRole === "student") {
+      url.pathname = isStudentProfileComplete(profile) ? "/student/dashboard" : "/student/complete-profile";
+    } else {
+      url.pathname = getRoleDashboardPath(userRole);
+    }
     return NextResponse.redirect(url);
   }
 

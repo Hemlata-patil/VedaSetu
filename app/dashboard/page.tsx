@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isStudentProfileComplete } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
@@ -13,10 +14,10 @@ async function RoleDispatcher() {
     redirect("/auth/login");
   }
 
-  // Authoritative role lookup from the database profiles table
+  // Authoritative role & profile lookup from the database profiles table
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("*")
     .eq("id", user.id)
     .single();
 
@@ -34,6 +35,9 @@ async function RoleDispatcher() {
     case "industry":
       redirect("/industry/dashboard");
     case "student":
+      if (!isStudentProfileComplete(profile)) {
+        redirect("/student/complete-profile");
+      }
       redirect("/student/dashboard");
     default:
       redirect("/profile");

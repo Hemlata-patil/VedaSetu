@@ -1,24 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import {
+  UserRole,
+  UserProfile,
+  isStudentProfileComplete,
+  getRoleDashboardPath,
+} from "@/lib/auth-helpers";
 
-export type UserRole = "student" | "faculty" | "institution" | "industry" | "super_admin";
-
-export interface UserProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  role: UserRole;
-  phone: string | null;
-  institution_id: string | null;
-  organization_id: string | null;
-  program: string | null;
-  year: number | null;
-  department: string | null;
-  designation?: string | null;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Re-export all client-safe types and helpers
+export type { UserRole, UserProfile };
+export { isStudentProfileComplete, getRoleDashboardPath };
 
 /**
  * Requires an authenticated user session. Redirects to /auth/login if unauthenticated.
@@ -46,19 +37,17 @@ export async function requireAuth() {
   };
 }
 
-export function getRoleDashboardPath(role: UserRole | string): string {
-  if (role === "super_admin") {
-    return "/super-admin/dashboard";
-  }
-  return `/${role}/dashboard`;
-}
-
 /**
  * Enforces role-based authorization based strictly on the database profiles table.
  * If the user has a different role, redirects them to their correct role dashboard.
  * A super_admin opening any standard role dashboard is redirected to /super-admin/dashboard.
+ * For students: Enforces mandatory profile completion before accessing student dashboard/features,
+ * unless allowIncomplete is explicitly set (e.g. for /student/complete-profile).
  */
-export async function requireRole(expectedRole: UserRole) {
+export async function requireRole(
+  expectedRole: UserRole,
+  options?: { allowIncomplete?: boolean }
+) {
   const { user, profile, supabase } = await requireAuth();
 
   if (!profile || !profile.role) {
@@ -72,6 +61,13 @@ export async function requireRole(expectedRole: UserRole) {
       redirect("/super-admin/dashboard");
     }
     redirect(getRoleDashboardPath(currentRole));
+  }
+
+  // Mandatory student profile completion check — strictly exclusive to student role
+  if (currentRole === "student" && !options?.allowIncomplete) {
+    if (!isStudentProfileComplete(profile)) {
+      redirect("/student/complete-profile");
+    }
   }
 
   return {
@@ -102,4 +98,3 @@ export async function requireSuperAdmin() {
     supabase,
   };
 }
-
